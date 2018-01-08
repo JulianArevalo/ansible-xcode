@@ -1,0 +1,19 @@
+---
+
+- hosts: all
+  name: Test ansible-xcode role
+
+  vars:
+    xcode_install_config:
+      - name: Xcode 8.3.3
+        version: "8.3.3"
+      - name: Xcode 9
+        version: "9"
+    xcode_select_version: "8.3.3"
+    # Enter your Apple developer id username
+    #xcode_apple_id_user: ""
+    # Enter your Apple developer id password
+    #xcode_apple_id_pass: ""
+
+  roles:
+    - role: ../../ansible-xcode

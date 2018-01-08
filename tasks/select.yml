@@ -1,0 +1,12 @@
+---
+# task file to choose default Xcode version to use
+
+- name: "Select Xcode version"
+  shell: xcversion select {{ xcode_select_version }}
+  environment:
+    # Workaround for macOS
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  register: xcode_select_status
+
+- debug:
+    msg="Xcode {{ xcode_select_version }} has been selected has default version"

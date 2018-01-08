@@ -1,0 +1,20 @@
+---
+# main task file for Xcode setup
+
+- name: "Check argument xcode_apple_id_user"
+  fail: msg="Please set xcode_apple_id_user"
+  when: xcode_apple_id_user is not defined
+
+- name: "Check argument xcode_apple_id_pass"
+  fail: msg="Please set xcode_apple_id_pass"
+  when: xcode_apple_id_pass is not defined
+
+- name: "Include task to install Xcode"
+  include: install.yml
+  tags: ['xcode_install']
+  when: xcode_install_config is defined
+
+- name: "Include task to select default Xcode version to use"
+  include: select.yml
+  tags: ['xcode_select']
+  when: xcode_select_version is defined

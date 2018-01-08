@@ -1,0 +1,76 @@
+---
+# task file for xcode-install tool setup and Xcode install
+
+- name: "Check argument xcode_install_config"
+  fail: msg="Missing version key in xcode_install_config"
+  with_items: "{{ xcode_install_config }}"
+  when: item.version is not defined
+
+- name: "Retrieve gem binary path"
+  shell: command -v gem
+  environment:
+    # Workaround for macOS
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  register: gem_bin
+
+- name: "Install ruby if only macos system ruby is available"
+  homebrew:
+    name: ruby
+    state: present
+  when: gem_bin.stdout | dirname  == "/usr/bin"
+
+- name: "Check if xcversion is installed"
+  shell: command -v xcversion > /dev/null
+  environment:
+    # Workaround for macOS
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  register: xcversion_exists
+  ignore_errors: yes
+
+- name: "Install xcversion"
+  gem:
+    name: xcode-install
+    state: present
+    user_install: no
+    executable: /usr/local/bin/gem
+  when: xcversion_exists.rc != 0
+
+- name: "Re-check if xcversion is installed"
+  shell: command -v xcversion > /dev/null
+  environment:
+    # Workaround for macOS
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  register: xcversion_exists
+
+- name: "Clean up xcversion cache"
+  shell: xcversion cleanup
+  environment:
+    # Workaround for macOS
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  when: xcversion_exists.rc == 0
+
+- name: "Check if Xcode already installed"
+  shell: xcversion installed
+  environment:
+    # Workaround for macOS
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  register: xcode_install_status
+  when: xcversion_exists.rc == 0
+
+- name: "Print information on Xcode version already installed"
+  debug:
+    msg="{{ xcode_install_status.stdout }}"
+  when: xcode_install_status.stdout != ""
+
+- name: "Install Xcode with xcversion"
+  shell: export XCODE_INSTALL_USER={{ xcode_apple_id_user }}; export XCODE_INSTALL_PASSWORD={{ xcode_apple_id_pass }}; xcversion install "{{ item.version }}"
+  environment:
+    # Workaround for macOS
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  with_items: "{{ xcode_install_config }}"
+  when: xcversion_exists.rc == 0 and not xcode_install_status.stdout | search(item.version)
+
+- name: "Accept Xcode licence"
+  shell: xcodebuild -license accept
+  become: yes
+
